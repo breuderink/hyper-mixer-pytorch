@@ -12,16 +12,18 @@ def MLP(in_features, out_features):
     )
 
 
-class TiedTokenMixer(nn.Module):
-    def __init__(self, d, d_prime):
+class TokenMixer(nn.Module):
+    def __init__(self, d, d_prime, tied):
         super().__init__()
-        self.MLP = MLP(d, d_prime)
+        self.MLP1 = MLP(d, d_prime)
+        self.MLP2 = MLP(d, d_prime) if not tied else None
 
     def forward(self, X):
-        W = self.MLP(X)
-        P = torch.einsum("bnp,bnd->bpd", W, X)
+        W1 = self.MLP1(X)
+        W2 = self.MLP2(X) if self.MLP2 else W1
+        P = torch.einsum("bnp, bnd -> bpd", W1, X)
         A = F.gelu(P)
-        Y = torch.einsum("bnp,bpd->bnd", W, A)
+        Y = torch.einsum("bnp, bpd -> bnd", W2, A)
         return Y
 
 
@@ -29,10 +31,7 @@ class HyperMixerLayer(nn.Module):
     def __init__(self, d, d_prime, *, tied=True):
         super().__init__()
         self.norm = nn.LayerNorm(d)
-        if tied:
-            self.token_mixer = TiedTokenMixer(d=d, d_prime=d_prime)
-        else:
-            raise NotImplementedError()
+        self.token_mixer = TokenMixer(d=d, d_prime=d_prime, tied=tied)
         self.feature_mixer = MLP(d, d)
 
     def forward(self, X):
@@ -56,3 +55,4 @@ class HyperMixer(nn.Module):
         H = self.layers(X)
         Y = self.supervised(torch.mean(H, dim=1))
         return Y
+

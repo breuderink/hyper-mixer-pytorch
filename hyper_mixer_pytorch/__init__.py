@@ -1,1 +1,1 @@
-from .hypermixer import TiedTokenMixer, HyperMixer
+from .hypermixer import TokenMixer, HyperMixer
