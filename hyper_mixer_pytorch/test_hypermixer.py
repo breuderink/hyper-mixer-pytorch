@@ -16,11 +16,12 @@ def test_tied_parameters():
 def test_token_permutation():
     N, d, d_prime = 100, 32, 64
 
-    X = torch.randn(1, N, d)
+    T = torch.randn(1, N, d)
+    P = torch.randn(1, N, d)
     perm = torch.randperm(N)
     layer = HyperMixerLayer(d, d_prime, tied=True)
 
-    Y1 = layer(X)[:,perm]
-    Y2 = layer(X[:,perm])
+    Y1 = layer(T, P)[:, perm, :]
+    Y2 = layer(T[:, perm, :], P[:, perm, :])
 
     assert torch.allclose(Y1, Y2, atol=1e-5)
