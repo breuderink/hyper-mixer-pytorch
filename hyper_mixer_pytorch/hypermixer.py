@@ -3,20 +3,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def MLP(in_features, out_features):
-    hidden = in_features
+def MLP(num_in, num_hidden=None, num_out=None):
+    num_hidden = num_hidden if num_hidden else num_in
+    num_out = num_out if num_out else num_in
     return nn.Sequential(
-        nn.Linear(in_features, hidden),
+        nn.Linear(num_in, num_hidden),
         nn.GELU(),
-        nn.Linear(hidden, out_features),
+        nn.Linear(num_hidden, num_out),
     )
 
 
 class TokenMixer(nn.Module):
     def __init__(self, d, d_prime, tied):
         super().__init__()
-        self.MLP1 = MLP(d, d_prime)
-        self.MLP2 = MLP(d, d_prime) if not tied else None
+        self.MLP1 = MLP(num_in=d, num_out=d_prime)
+        self.MLP2 = MLP(num_in=d, num_out=d_prime) if not tied else None
 
     def forward(self, T, P):
         X = T + P
@@ -33,7 +34,7 @@ class HyperMixerLayer(nn.Module):
         super().__init__()
         self.norm = nn.LayerNorm(d)
         self.token_mixer = TokenMixer(d=d, d_prime=d_prime, tied=tied)
-        self.feature_mixer = MLP(d, d)
+        self.feature_mixer = MLP(d, d, d)
 
     def forward(self, T, P):
         T = T + self.token_mixer(self.norm(T), P)
