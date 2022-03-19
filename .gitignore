@@ -131,3 +131,4 @@ dmypy.json
 # Other files.
 .vscode/settings.json
 .DS_Store
+data/mnist1d_data.npz
