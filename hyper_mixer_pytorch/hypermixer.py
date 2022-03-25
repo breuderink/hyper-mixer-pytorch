@@ -46,19 +46,38 @@ class HyperMixerLayer(nn.Module):
 
 class HyperMixer(nn.Module):
     def __init__(
-        self, d_in, *, layers=8, d=256, d_prime=512, tied=True, f=None, n_classes=1000
+        self,
+        *,
+        embedding=None,
+        layers=8,
+        d=256,
+        d_prime=512,
+        tied=True,
+        f=None,
+        n_classes=1000
     ):
         super().__init__()
-        self.embedding = nn.Linear(d_in, d)
-        self.layers = [HyperMixerLayer(d, d_prime, f=f, tied=tied) for _ in range(layers)]
+        self.embedding = embedding
+        self.layers = [
+            HyperMixerLayer(d, d_prime, f=f, tied=tied) for _ in range(layers)
+        ]
         self.supervised = nn.Sequential(
             nn.LayerNorm(d),
             nn.Linear(d, n_classes),
         )
 
     def forward(self, X, P):
-        X = self.embedding(X)
+        if self.embedding:
+            X = self.embedding(X)
         for layer in self.layers:
             X = layer(X, P)
         Y = self.supervised(torch.mean(X, dim=1))
         return Y
+
+
+def position_1d(position, dims):
+    """Position has shape (b, t, 1) or (t, 1)."""
+    scales = torch.pow(1000, -2 * torch.arange(dims // 2) / dims)
+    assert scales.numel() * 2 == dims
+    S = position * scales
+    return torch.cat((torch.sin(S), torch.cos(S)), dim=-1)

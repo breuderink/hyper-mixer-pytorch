@@ -1,5 +1,6 @@
-from .hypermixer import HyperMixerLayer
+import pytest
 import torch
+from .hypermixer import HyperMixerLayer
 
 
 def test_tied_parameters():
@@ -25,3 +26,13 @@ def test_token_permutation():
     Y2 = layer(T[:, perm, :], P[:, perm, :])
 
     assert torch.allclose(Y1, Y2, atol=1e-5)
+
+
+@pytest.mark.skip(reason="TODO")
+def test_full_model():
+    raise NotImplementedError()
+
+
+@pytest.mark.skip(reason="TODO")
+def test_position_encoding():
+    raise NotImplementedError()

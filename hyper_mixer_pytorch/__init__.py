@@ -1,1 +1,1 @@
-from .hypermixer import HyperTokenMixer, HyperMixer
+from .hypermixer import HyperTokenMixer, HyperMixer, position_1d
