@@ -46,16 +46,18 @@ class HyperMixerLayer(nn.Module):
 
 class HyperMixer(nn.Module):
     def __init__(
-        self, *, layers=8, d=256, d_prime=512, tied=True, f=None, n_classes=1000
+        self, d_in, *, layers=8, d=256, d_prime=512, tied=True, f=None, n_classes=1000
     ):
         super().__init__()
-        self.layers = [HyperMixerLayer(d, d_prime, f, tied=tied) for _ in range(layers)]
+        self.embedding = nn.Linear(d_in, d)
+        self.layers = [HyperMixerLayer(d, d_prime, f=f, tied=tied) for _ in range(layers)]
         self.supervised = nn.Sequential(
             nn.LayerNorm(d),
             nn.Linear(d, n_classes),
         )
 
     def forward(self, X, P):
+        X = self.embedding(X)
         for layer in self.layers:
             X = layer(X, P)
         Y = self.supervised(torch.mean(X, dim=1))
