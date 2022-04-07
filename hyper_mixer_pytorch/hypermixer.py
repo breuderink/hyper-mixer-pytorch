@@ -49,9 +49,9 @@ class HyperMixer(nn.Module):
         self, *, layers=8, d=256, d_prime=512, tied=True, f=None, n_classes=1000
     ):
         super().__init__()
-        self.layers = [
-            HyperMixerLayer(d, d_prime, f=f, tied=tied) for _ in range(layers)
-        ]
+        self.layers = nn.ModuleList(
+            [HyperMixerLayer(d, d_prime, f=f, tied=tied) for _ in range(layers)]
+        )
         self.supervised = nn.Sequential(
             nn.LayerNorm(d),
             nn.Linear(d, n_classes),
