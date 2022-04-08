@@ -1,13 +1,13 @@
 import pytest
 import torch
-from .hypermixer import HyperMixerLayer
+from .hypermixer import HyperMixerLayer, HyperTokenMixer
 
 
 def test_tied_parameters():
-    d, d_prime = 256, 512
+    d = 256
 
-    tied = HyperMixerLayer(d, d_prime, tied=True)
-    untied = HyperMixerLayer(d, d_prime, tied=False)
+    tied = HyperMixerLayer(d)
+    untied = HyperMixerLayer(d, token_mixer=lambda d: HyperTokenMixer(d, tied=False))
 
     assert sum(p.numel() for p in tied.parameters()) < sum(
         p.numel() for p in untied.parameters()
@@ -20,7 +20,7 @@ def test_token_permutation():
     T = torch.randn(1, N, d)
     P = torch.randn(1, N, d)
     perm = torch.randperm(N)
-    layer = HyperMixerLayer(d, d_prime, tied=True)
+    layer = HyperMixerLayer(d)
 
     Y1 = layer(T, P)[:, perm, :]
     Y2 = layer(T[:, perm, :], P[:, perm, :])
