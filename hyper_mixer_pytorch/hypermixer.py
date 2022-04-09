@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from math import pi
 
 
 def MLP(num_in, num_hidden, num_out):
@@ -16,7 +17,7 @@ class Position1D(nn.Module):
         scales = torch.pow(1000, -2 * torch.arange(dims // 2) / dims)
         weight = torch.repeat_interleave(scales, 2)[None, :]
         bias = torch.zeros_like(weight)
-        bias[:,1::2] = torch.pi / 2
+        bias[:,1::2] = pi / 2
         self.register_buffer("weight", weight)
         self.register_buffer("bias", bias)
 
