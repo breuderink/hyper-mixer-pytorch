@@ -11,20 +11,6 @@ def MLP(num_in, num_hidden, num_out):
     )
 
 
-class Position1D(nn.Module):
-    def __init__(self, dims) -> None:
-        super().__init__()
-        scales = torch.pow(1000, -2 * torch.arange(dims // 2) / dims)
-        weight = torch.repeat_interleave(scales, 2)[None, :]
-        bias = torch.zeros_like(weight)
-        bias[:,1::2] = pi / 2
-        self.register_buffer("weight", weight)
-        self.register_buffer("bias", bias)
-
-    def forward(self, position):
-        return torch.sin(position @ self.weight + self.bias)
-
-
 class HyperTokenMixer(nn.Module):
     def __init__(self, d, *, d_prime=None, tied=True, hyper_net=None, activation=None):
         super().__init__()
@@ -65,30 +51,17 @@ class HyperMixerLayer(nn.Module):
 
 
 class HyperMixer(nn.Module):
-    def __init__(
-        self,
-        *,
-        position_encoder=Position1D,
-        d=256,
-        layers=8,
-        layer=HyperMixerLayer,
-        n_classes=1000
-    ):
+    def __init__(self, *, d=256, layers=8, layer=HyperMixerLayer, n_classes=1000):
         super().__init__()
-        self.position_encoder = position_encoder(d)
         self.layers = nn.ModuleList([layer(d) for _ in range(layers)])
         self.supervised = nn.Sequential(
             nn.LayerNorm(d),
             nn.Linear(d, n_classes),
         )
 
-    def forward(self, X, P=None):
-        if P == None:
-            P = torch.arange(X.shape[-2], dtype=X.dtype)[None, :, None]
-        PE = self.position_encoder(P)
-
+    def forward(self, X, P):
         for layer in self.layers:
-            X = layer(X, PE)
+            X = layer(X, P)
 
         Y = self.supervised(torch.mean(X, dim=1))
         return Y
