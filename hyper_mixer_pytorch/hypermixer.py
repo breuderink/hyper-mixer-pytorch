@@ -12,16 +12,11 @@ def MLP(num_in, num_hidden, num_out):
 
 
 class HyperTokenMixer(nn.Module):
-    def __init__(self, d, *, d_prime=None, tied=True, hyper_net=None, activation=None):
+    def __init__(self, *, d, d_prime, h1, h2=None, activation=None):
         super().__init__()
-        if not d_prime:
-            d_prime = d * 2
-        if not hyper_net:
-            hyper_net = lambda d, d_prime: MLP(d, d_prime, d_prime)
-
-        self.h1 = hyper_net(d, d_prime)
-        self.h2 = hyper_net(d, d_prime) if not tied else None
-        self.activation = nn.GELU() if not activation else activation
+        self.h1 = h1
+        self.h2 = h2
+        self.activation = activation if activation else nn.GELU()
 
     def forward(self, X, P):
         # FIXME: the authors multiply X by sqrt(d) in code.
@@ -38,11 +33,11 @@ class HyperTokenMixer(nn.Module):
 
 
 class HyperMixerLayer(nn.Module):
-    def __init__(self, d, *, token_mixer=None, feature_mixer=None):
+    def __init__(self, d, *, token_mixer, feature_mixer):
         super().__init__()
         self.norm = nn.LayerNorm(d)
-        self.token_mixer = token_mixer(d) if token_mixer else HyperTokenMixer(d)
-        self.feature_mixer = feature_mixer(d) if feature_mixer else MLP(d, d, d)
+        self.token_mixer = token_mixer
+        self.feature_mixer = feature_mixer
 
     def forward(self, X, P=None):
         X = X + self.token_mixer(self.norm(X), P)
@@ -50,8 +45,20 @@ class HyperMixerLayer(nn.Module):
         return X
 
 
+def hyper_mixer_layer(d, *, d_prime=None, tied=True):
+    d_prime = d_prime if d_prime else d * 2
+    h1 = MLP(d, d, d_prime)
+    h2 = None if tied else MLP(d, d, d_prime)
+    return HyperMixerLayer(
+        d,
+        token_mixer=HyperTokenMixer(d=d, d_prime=d_prime, h1=h1, h2=h2),
+        feature_mixer=MLP(d, d, d),
+    )
+
 class HyperMixer(nn.Module):
-    def __init__(self, *, d=256, layers=8, layer=HyperMixerLayer, n_classes=1000):
+    def __init__(
+        self, *, d=256, layers=8, layer=hyper_mixer_layer, n_classes=1000
+    ):
         super().__init__()
         self.layers = nn.ModuleList([layer(d) for _ in range(layers)])
         self.supervised = nn.Sequential(
