@@ -55,10 +55,9 @@ def hyper_mixer_layer(d, *, d_prime=None, tied=True):
         feature_mixer=MLP(d, d, d),
     )
 
+
 class HyperMixer(nn.Module):
-    def __init__(
-        self, *, d=256, layers=8, layer=hyper_mixer_layer, n_classes=1000
-    ):
+    def __init__(self, *, d=256, layers=8, layer=hyper_mixer_layer, n_classes=1000):
         super().__init__()
         self.layers = nn.ModuleList([layer(d) for _ in range(layers)])
         self.supervised = nn.Sequential(
