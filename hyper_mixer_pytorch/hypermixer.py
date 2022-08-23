@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from math import pi
 
 
 def MLP(num_in, num_hidden, num_out):
